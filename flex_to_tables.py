@@ -159,21 +159,56 @@ if lexicon_file:
             cur.executemany(f"INSERT INTO text_morphemes VALUES (?, ?, ?)", morpheme_values)
             con.commit()
     
-    default_query = """
+    premade_query = st.pills(
+        "Pre-made query",
+        options=[
+            "lexicon",
+            "interlinear text",
+        ],
+        selection_mode="single",
+        default="lexicon",
+    )
+    
+    if premade_query == "lexicon":
+        default_query = """
 SELECT spellings.form, senses.gloss, senses.part_of_speech, lexemes.morpheme_type
 FROM spellings, senses, lexemes
 WHERE spellings.lexeme=senses.lexeme AND senses.lexeme=lexemes.rowid
 LIMIT 100
 """.strip()
-    query = st.text_area("Custom query", value=default_query).strip()
-    if query:
-        try:
-            cur = con.cursor()
-            cur.execute(query)
-            st.write("Query result")
-            st.dataframe(pd.DataFrame(cur.fetchall()))
-        except Exception as e:
-            st.error(f"Bad query\n{str(e)}")
+        query = st.text_area("Custom query", value=default_query).strip()
+    elif premade_query == "interlinear text":
+        default_query = """
+WITH morpheme_spelling_sense AS (
+    SELECT spellings.rowid AS spellingid,
+           spellings.form AS form,
+           text_morphemes.textid AS textid,
+           text_morphemes.morpheme_order AS morpheme_order,
+           senses.gloss AS gloss
+    FROM text_morphemes, spellings, senses
+    WHERE text_morphemes.spellingid=spellings.rowid
+    AND spellings.lexeme=senses.lexeme
+)
+SELECT texts.text_name AS text_name,
+       texts.word AS word,
+       morpheme_spelling_sense.form AS form,
+       morpheme_spelling_sense.gloss AS gloss
+FROM (texts LEFT JOIN morpheme_spelling_sense
+      ON morpheme_spelling_sense.textid=texts.rowid)
+ORDER BY texts.text_name, narrative_order ASC, morpheme_order ASC
+LIMIT 100
+""".strip()
+        query = st.text_area("Custom query", value=default_query).strip()
+    else:
+        query = st.text_area("Custom query", value="").strip()
+        
+    try:
+        cur = con.cursor()
+        cur.execute(query)
+        st.write("Query result")
+        st.dataframe(pd.DataFrame(cur.fetchall()))
+    except Exception as e:
+        st.error(f"Bad query\n{str(e)}")
     
     lexemes_df = pd.read_sql_query("SELECT * FROM lexemes", con)
     spellings_df = pd.read_sql_query("SELECT * FROM spellings", con)
