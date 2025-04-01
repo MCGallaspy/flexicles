@@ -88,6 +88,22 @@ The tables are defined in sqlite-flavored SQL:
 
 with st.form("Upload XML Files"):
     st.header("Upload XML Files")
+
+    expander = st.expander("How to export a LIFT lexicon from FLEx")
+    expander.markdown("**Step 1:** In the Lexicon view, click File > Export...")
+    expander.image("images/lift_export_1.png")
+    
+    expander.markdown("**Step 2:** Choose an option with the LIFT format and click Export")
+    expander.image("images/lift_export_2.png")
+    
+    
+    expander = st.expander("How to export interlinear text `.flextext` files from FLEx")
+    expander.markdown("**Step 1:** In the Text & Words view, on the Interlinear Texts tab, click File > Export Interlinear...")
+    expander.image("images/interlinear_1.png")
+    
+    expander.markdown("**Step 2:** Choose the option with the FLEXTEXT extension and click Export")
+    expander.image("images/interlinear_2.png")
+    
     lexicon_file = st.file_uploader("LIFT Lexicon")
     texts_file = st.file_uploader("Interlinear texts XML (`.flextext`)")
     st.form_submit_button("Upload")
