@@ -90,78 +90,91 @@ with st.form("Upload XML Files"):
     st.header("Upload XML Files")
     lexicon_file = st.file_uploader("LIFT Lexicon")
     texts_file = st.file_uploader("Interlinear texts XML (`.flextext`)")
-    submit = st.form_submit_button("Upload")
+    st.form_submit_button("Upload")
 
-if submit and lexicon_file:
-    with st.spinner("tabulating"):
-        DATABASE_NAME = ":memory:"
-        con = sqlite3.connect(DATABASE_NAME)
-        st.session_state['dbcon'] = con
-        cur = con.cursor()
-        cur.executescript(schema_script)
+if lexicon_file:
+    DATABASE_NAME = ":memory:"
+    con = sqlite3.connect(DATABASE_NAME)
+    st.session_state['dbcon'] = con
+    cur = con.cursor()
+    cur.executescript(schema_script)
+    
+    tree = ET.parse(lexicon_file)
+    root = tree.getroot()
+    for entry in root.findall('entry'):
+        lexeme_form = entry.find('./lexical-unit/form')
+        lemma = lexeme_form.find('text').text
+        morpheme_type = entry.find('./trait[@name="morph-type"]').attrib['value']
         
-        tree = ET.parse(lexicon_file)
+        cur.execute(f"INSERT INTO lexemes VALUES (NULL, '{lemma}', '{morpheme_type}')")
+        con.commit()
+        
+        lexeme_id = cur.lastrowid
+        cur.execute(f"INSERT INTO spellings VALUES (NULL, '{lemma}', {lexeme_id})")
+        for variant_form in entry.findall('./variant/form/text'):
+            cur.execute(f"INSERT INTO spellings VALUES (NULL, '{variant_form.text}', {lexeme_id})")
+        con.commit()
+
+        for sense in entry.findall('sense'):
+            gloss = sense.find('./gloss/text').text
+            part_of_speech = sense.find('grammatical-info').attrib['value']
+            cur.execute(f"INSERT INTO senses VALUES (NULL, '{gloss}', {lexeme_id}, '{part_of_speech}')")
+            con.commit()
+            sense_id = cur.lastrowid
+            for trait in sense.findall('./grammatical-info/trait'):
+                name = trait.attrib['name']
+                value = trait.attrib['value']
+                cur.execute(f"INSERT INTO sense_grammatical_info VALUES ('{name}', '{value}', {lexeme_id})")
+            con.commit()
+    
+    if texts_file:
+        tree = ET.parse(texts_file)
         root = tree.getroot()
-        for entry in root.findall('entry'):
-            lexeme_form = entry.find('./lexical-unit/form')
-            lemma = lexeme_form.find('text').text
-            morpheme_type = entry.find('./trait[@name="morph-type"]').attrib['value']
+        for text in root.findall('interlinear-text'):
+            title = root.find(".//item[@type='title']").text
             
-            cur.execute(f"INSERT INTO lexemes VALUES (NULL, '{lemma}', '{morpheme_type}')")
-            con.commit()
-            
-            lexeme_id = cur.lastrowid
-            cur.execute(f"INSERT INTO spellings VALUES (NULL, '{lemma}', {lexeme_id})")
-            for variant_form in entry.findall('./variant/form/text'):
-                cur.execute(f"INSERT INTO spellings VALUES (NULL, '{variant_form.text}', {lexeme_id})")
+            word_values = []
+            for narrative_order, word in enumerate(text.findall('.//word')):
+                word_values.append([title, narrative_order, word.find('./item').text])
+            cur.executemany(f"INSERT INTO texts VALUES (NULL, ?, ?, ?)", word_values)
             con.commit()
 
-            for sense in entry.findall('sense'):
-                gloss = sense.find('./gloss/text').text
-                part_of_speech = sense.find('grammatical-info').attrib['value']
-                cur.execute(f"INSERT INTO senses VALUES (NULL, '{gloss}', {lexeme_id}, '{part_of_speech}')")
-                con.commit()
-                sense_id = cur.lastrowid
-                for trait in sense.findall('./grammatical-info/trait'):
-                    name = trait.attrib['name']
-                    value = trait.attrib['value']
-                    cur.execute(f"INSERT INTO sense_grammatical_info VALUES ('{name}', '{value}', {lexeme_id})")
-                con.commit()
-        
-        if texts_file:
-            tree = ET.parse(texts_file)
-            root = tree.getroot()
-            for text in root.findall('interlinear-text'):
-                title = root.find(".//item[@type='title']").text
-                
-                word_values = []
-                for narrative_order, word in enumerate(text.findall('.//word')):
-                    word_values.append([title, narrative_order, word.find('./item').text])
-                cur.executemany(f"INSERT INTO texts VALUES (NULL, ?, ?, ?)", word_values)
-                con.commit()
-
-                morpheme_values = []
-                for narrative_order, word in enumerate(text.findall('.//word')):
-                    query = f"SELECT rowid FROM texts WHERE text_name='{title}' AND narrative_order={narrative_order}"
-                    textid = cur.execute(query).fetchone()[0]
-                    for morpheme_order, morph in enumerate(word.findall('.//morph')):
-                        gloss = morph.find("./item[@type='gls']")
-                        spelling = morph.find("./item[@type='txt']")
-                        if (gloss is None) or (spelling is None):
-                            continue
-                        gloss = gloss.text
-                        spelling = spelling.text
-                        query = f"""SELECT spellings.rowid AS spellingid
-                                    FROM spellings, senses
-                                    WHERE spellings.lexeme=senses.lexeme
-                                      AND senses.gloss='{gloss}' AND spellings.form='{spelling}'"""
-                        spellingid = cur.execute(query).fetchone()[0]
-                        morpheme_values.append([spellingid, textid, morpheme_order])
-                cur.executemany(f"INSERT INTO text_morphemes VALUES (?, ?, ?)", morpheme_values)
-                con.commit()
-
-if 'dbcon' in st.session_state:
-    con = st.session_state['dbcon']
+            morpheme_values = []
+            for narrative_order, word in enumerate(text.findall('.//word')):
+                query = f"SELECT rowid FROM texts WHERE text_name='{title}' AND narrative_order={narrative_order}"
+                textid = cur.execute(query).fetchone()[0]
+                for morpheme_order, morph in enumerate(word.findall('.//morph')):
+                    gloss = morph.find("./item[@type='gls']")
+                    spelling = morph.find("./item[@type='txt']")
+                    if (gloss is None) or (spelling is None):
+                        continue
+                    gloss = gloss.text
+                    spelling = spelling.text
+                    query = f"""SELECT spellings.rowid AS spellingid
+                                FROM spellings, senses
+                                WHERE spellings.lexeme=senses.lexeme
+                                  AND senses.gloss='{gloss}' AND spellings.form='{spelling}'"""
+                    spellingid = cur.execute(query).fetchone()[0]
+                    morpheme_values.append([spellingid, textid, morpheme_order])
+            cur.executemany(f"INSERT INTO text_morphemes VALUES (?, ?, ?)", morpheme_values)
+            con.commit()
+    
+    default_query = """
+SELECT spellings.form, senses.gloss, senses.part_of_speech, lexemes.morpheme_type
+FROM spellings, senses, lexemes
+WHERE spellings.lexeme=senses.lexeme AND senses.lexeme=lexemes.rowid
+LIMIT 100
+""".strip()
+    query = st.text_area("Custom query", value=default_query).strip()
+    if query:
+        try:
+            cur = con.cursor()
+            cur.execute(query)
+            st.write("Query result")
+            st.dataframe(pd.DataFrame(cur.fetchall()))
+        except Exception as e:
+            st.error(f"Bad query\n{str(e)}")
+    
     lexemes_df = pd.read_sql_query("SELECT * FROM lexemes", con)
     spellings_df = pd.read_sql_query("SELECT * FROM spellings", con)
     senses_df = pd.read_sql_query("SELECT * FROM senses", con)
