@@ -133,8 +133,12 @@ if lexicon_file:
 
         for sense in entry.findall('sense'):
             gloss = sense.find('./gloss/text').text
-            part_of_speech = sense.find('grammatical-info').attrib['value']
-            cur.execute(f"INSERT INTO senses VALUES (NULL, '{gloss}', {lexeme_id}, '{part_of_speech}')")
+            grammatical_info = sense.find('grammatical-info')
+            part_of_speech = "NULL"
+            if grammatical_info is not None:
+                part_of_speech = grammatical_info.attrib['value']
+                part_of_speech = f"'{part_of_speech}'"
+            cur.execute(f"INSERT INTO senses VALUES (NULL, '{gloss}', {lexeme_id}, {part_of_speech})")
             con.commit()
             sense_id = cur.lastrowid
             for trait in sense.findall('./grammatical-info/trait'):
@@ -165,13 +169,20 @@ if lexicon_file:
                     if (gloss is None) or (spelling is None):
                         continue
                     gloss = gloss.text
+                    gloss = gloss.replace("=", "")
+                    gloss = gloss.replace("*", "")
+                    gloss = gloss.replace("-", "")
                     spelling = spelling.text
                     query = f"""SELECT spellings.rowid AS spellingid
                                 FROM spellings, senses
                                 WHERE spellings.lexeme=senses.lexeme
                                   AND senses.gloss='{gloss}' AND spellings.form='{spelling}'"""
-                    spellingid = cur.execute(query).fetchone()[0]
-                    morpheme_values.append([spellingid, textid, morpheme_order])
+                    try:
+                        spellingid = cur.execute(query).fetchone()[0]
+                        morpheme_values.append([spellingid, textid, morpheme_order])
+                    except Exception as e:
+                        print(query)
+                        print(e)
             cur.executemany(f"INSERT INTO text_morphemes VALUES (?, ?, ?)", morpheme_values)
             con.commit()
     
