@@ -23,7 +23,6 @@ decorator==5.2.1
 defusedxml==0.7.1
 executing==2.2.0
 fastjsonschema==2.21.1
-flexlibs==1.2.4
 fqdn==1.5.1
 gitdb==4.0.12
 GitPython==3.1.44
@@ -85,8 +84,6 @@ python-dateutil==2.9.0.post0
 python-json-logger==3.3.0
 pythonnet==3.0.5
 pytz==2025.1
-pywin32==310
-pywinpty==2.0.15
 PyYAML==6.0.2
 pyzmq==26.3.0
 referencing==0.36.2
