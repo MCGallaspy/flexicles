@@ -198,7 +198,7 @@ if lexicon_file:
     
     if premade_query == "lexicon":
         default_query = """
-SELECT spellings.form, senses.gloss, senses.part_of_speech, lexemes.morpheme_type
+SELECT spellings.form, senses.gloss, senses.part_of_speech, lexemes.morpheme_type, lexemes.rowid
 FROM spellings, senses, lexemes
 WHERE spellings.lexeme=senses.lexeme AND senses.lexeme=lexemes.rowid
 LIMIT 100

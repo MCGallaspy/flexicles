@@ -87,6 +87,18 @@
 </description>
 <trait name="catalog-source-id" value="Particle"/>
 </range-element>
+<range-element id="Interjection" guid="d32dff62-4117-4762-a887-96478406769b">
+<label>
+<form lang="en"><text>Interjection</text></form>
+</label>
+<abbrev>
+<form lang="en"><text>interj</text></form>
+</abbrev>
+<description>
+<form lang="en"><text>An interjection is a part of speech, typically brief in form, such as one syllable or word, whose members are used most often as exclamations or parts of an exclamation. An interjection, typically expressing an emotional reaction, often with respect to an accompanying sentence, is not syntactically related to other accompanying expressions, and may include a combination of sounds not otherwise found in the language.</text></form>
+</description>
+<trait name="catalog-source-id" value="Interjection"/>
+</range-element>
 </range>
 <range id="lexical-relation">
 <!--The following range elements were added by FieldWorks Language Explorer. -->
@@ -27212,6 +27224,18 @@
 <form lang="en"><text>A particle is a part of speech whose members do not belong to one of the main classes of words, is invariable, and typically has grammatical or pragmatic meaning.</text></form>
 </description>
 <trait name="catalog-source-id" value="Particle"/>
+</range-element>
+<range-element id="Interjection" guid="d32dff62-4117-4762-a887-96478406769b">
+<label>
+<form lang="en"><text>Interjection</text></form>
+</label>
+<abbrev>
+<form lang="en"><text>interj</text></form>
+</abbrev>
+<description>
+<form lang="en"><text>An interjection is a part of speech, typically brief in form, such as one syllable or word, whose members are used most often as exclamations or parts of an exclamation. An interjection, typically expressing an emotional reaction, often with respect to an accompanying sentence, is not syntactically related to other accompanying expressions, and may include a combination of sounds not otherwise found in the language.</text></form>
+</description>
+<trait name="catalog-source-id" value="Interjection"/>
 </range-element>
 </range>
 <range id="morph-type">

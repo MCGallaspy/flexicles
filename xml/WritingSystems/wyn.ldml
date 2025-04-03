@@ -2,11 +2,11 @@
 <ldml>
 	<identity>
 		<version number="" />
-		<generation date="2025-03-22T15:58:48Z" />
+		<generation date="2025-04-02T22:22:33Z" />
 		<language type="wyn" />
 	</identity>
 	<characters>
-		<exemplarCharacters>[\:A-Za-z\u0294]</exemplarCharacters>
+		<exemplarCharacters>[\:A-Za-z\u0294{e\u0328}]</exemplarCharacters>
 	</characters>
 	<layout>
 		<orientation>
