@@ -191,6 +191,8 @@ if lexicon_file:
         options=[
             "lexicon",
             "interlinear text",
+            "adjacent word pairs",
+            "morpheme pairs from adjacent words",
         ],
         selection_mode="single",
         default="lexicon",
@@ -223,6 +225,43 @@ SELECT texts.text_name AS text_name,
 FROM (texts LEFT JOIN morpheme_spelling_sense
       ON morpheme_spelling_sense.textid=texts.rowid)
 ORDER BY texts.text_name, narrative_order ASC, morpheme_order ASC
+LIMIT 100
+""".strip()
+        query = st.text_area("Custom query", value=default_query).strip()
+    elif premade_query == "adjacent word pairs":
+        default_query = """
+SELECT ltext.word, rtext.word
+FROM texts as ltext, texts as rtext
+WHERE ltext.text_name=rtext.text_name
+AND   ltext.narrative_order+1=rtext.narrative_order
+LIMIT 100
+""".strip()
+        query = st.text_area("Custom query", value=default_query).strip()
+    elif premade_query == "morpheme pairs from adjacent words":
+        st.info("For every pair of adjacent words A and B, "
+                "find the set of all morpheme pairs (a, b) where "
+                "the morpheme a is in A and b is in B.")
+        default_query = """
+WITH word_pairs AS (
+    SELECT ltext.word  AS lword,   rtext.word  AS rword,
+           ltext.rowid AS ltextid, rtext.rowid AS rtextid
+    FROM texts AS ltext, texts AS rtext
+    WHERE ltext.text_name           = rtext.text_name
+    AND   ltext.narrative_order + 1 = rtext.narrative_order
+)
+SELECT lsenses.gloss,     rsenses.gloss,
+       word_pairs.lword,  word_pairs.rword,
+       word_pairs.ltextid
+FROM word_pairs,
+     text_morphemes AS lmorphs,    text_morphemes AS rmorphs,
+     spellings      AS lspellings, spellings      AS rspellings,
+     senses         AS lsenses,    senses         AS rsenses
+WHERE word_pairs.ltextid = lmorphs.textid
+AND   lmorphs.spellingid = lspellings.rowid
+AND   lspellings.lexeme  = lsenses.lexeme
+AND   word_pairs.rtextid = rmorphs.textid
+AND   rmorphs.spellingid = rspellings.rowid
+AND   rspellings.lexeme  = rsenses.lexeme
 LIMIT 100
 """.strip()
         query = st.text_area("Custom query", value=default_query).strip()
